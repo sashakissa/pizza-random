@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Яку піцу ми сьогодні їмо?</title>
+<meta name="description" content="Не сперечайтесь — крутіть колесо. Обирає піцу, рахує скільки брати і вирішує, хто платить.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Яку піцу ми сьогодні їмо?">
+<meta property="og:description" content="Не сперечайтесь — крутіть колесо. Піца, кількість і хто платить.">
+<meta property="og:image" content="/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#FFE600">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFE600'/%3E%3Cpath d='M16 4 28 27H4z' fill='%23FF5FA2' stroke='%23111' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='17' r='2.5' fill='%23111'/%3E%3Ccircle cx='12' cy='23' r='2' fill='%23111'/%3E%3Ccircle cx='20' cy='23' r='2' fill='%23111'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* VOICE: мем-брутал — гучно, смішно, без суперечок
+   IDEA: зін-наліпка: усе як вирізане з паперу, товсті рамки, жорсткі тіні
+   PICTURE: велике біло-рожево-синє колесо з чорними рамками і кнопкою «ТИЦЬ»
+   COLOUR and TYPE: кислотно-жовтий #FFE600, чорний, рожевий #FF5FA2, синій #2D5BFF; Rubik Mono One + Rubik
+   LAYOUT: шапка, колесо, чорна плашка-вердикт; нижче блоки-наліпки налаштувань */
+:root{--y:#FFE600;--k:#111;--p:#FF5FA2;--b:#2D5BFF;--w:#fff}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--y);color:var(--k);font:16px/1.45 Rubik,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:560px;margin:0 auto;padding:20px max(4vw,16px) 48px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tag{font:900 13px Rubik,sans-serif;background:var(--k);color:var(--y);padding:7px 12px;transform:rotate(-2deg);display:inline-block}
+.mute{width:44px;height:44px;border:3px solid var(--k);background:var(--w);box-shadow:3px 3px 0 var(--k);cursor:pointer;display:grid;place-items:center}
+h1{font:400 clamp(28px,8.4vw,44px)/1.04 'Rubik Mono One',sans-serif;text-transform:uppercase;margin:18px 0 6px}
+.sub{margin:0;font-weight:500;font-size:17px}
+.wheelbox{position:relative;width:min(100%,460px);aspect-ratio:1;margin:18px auto 0}
+#wheel{width:100%;height:100%;display:block}
+.spin{position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;border-radius:50%;border:4px solid var(--k);background:var(--y);color:var(--k);
+ font:400 clamp(15px,4.4vw,22px) 'Rubik Mono One',sans-serif;box-shadow:5px 5px 0 var(--k);cursor:pointer;transform:translate(-50%,-50%) rotate(-6deg);transition:transform .12s,box-shadow .12s}
+.spin:hover{transform:translate(-50%,-50%) rotate(-6deg) scale(1.05)}
+.spin:active{transform:translate(calc(-50% + 4px),calc(-50% + 4px)) rotate(-6deg);box-shadow:1px 1px 0 var(--k)}
+.spin:disabled{cursor:wait}
+.verdict{margin:22px 0 0;display:flex;flex-direction:column;gap:6px;min-height:150px}
+.v-lbl{font:900 16px Rubik,sans-serif}
+.v-name{align-self:flex-start;font:400 clamp(26px,8.6vw,42px)/1.05 'Rubik Mono One',sans-serif;text-transform:uppercase;background:var(--k);color:var(--y);
+ padding:12px 14px 10px;transform:rotate(-2deg);box-shadow:6px 6px 0 var(--p);max-width:100%;overflow-wrap:anywhere}
+.v-name.wait{background:var(--w);color:var(--k);box-shadow:6px 6px 0 var(--k)}
+.v-name.pop{animation:pop .45s cubic-bezier(.2,1.8,.4,1)}
+@keyframes pop{0%{transform:rotate(-12deg) scale(.6)}100%{transform:rotate(-2deg) scale(1)}}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pill{border:3px solid var(--k);background:var(--w);padding:5px 10px;font-weight:900;white-space:nowrap}
+.pill.b{background:var(--b);color:var(--w);font-weight:700}
+.card{border:3px solid var(--k);background:var(--w);box-shadow:6px 6px 0 var(--k);padding:18px;margin-top:26px}
+h2{font:400 19px/1.2 'Rubik Mono One',sans-serif;text-transform:uppercase;margin:0 0 6px}
+.hint{margin:0 0 12px;font-size:14px;color:#444}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{min-height:44px;padding:6px 12px;border:3px solid var(--k);background:var(--w);color:var(--k);font:700 15px Rubik,sans-serif;cursor:pointer;display:inline-flex;gap:8px;align-items:center;transition:transform .1s}
+.chip:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--k)}
+.chip[aria-pressed=true]{background:var(--y)}
+.chip[aria-pressed=false]{background:#eee;color:#666;text-decoration:line-through}
+.chip .pr{font-weight:500;font-size:13px;opacity:.75;white-space:nowrap}
+.chip .sq{width:12px;height:12px;border:2px solid var(--k);flex:none}
+.quick .chip{background:var(--k);color:var(--y);text-decoration:none}
+.mode .chip[aria-pressed=false]{text-decoration:none;background:var(--w);color:var(--k)}
+.mode .chip[aria-pressed=true]{background:var(--k);color:var(--y)}
+input[type=text],input[type=number]{min-height:48px;font:16px Rubik,sans-serif;padding:8px 12px;border:3px solid var(--k);background:var(--w);color:var(--k);border-radius:0}
+input[type=text]{flex:1 1 150px}
+.btn{min-height:52px;padding:8px 16px;border:3px solid var(--k);background:var(--w);color:var(--k);font:900 15px/1.15 Rubik,sans-serif;cursor:pointer;box-shadow:4px 4px 0 var(--k);transition:transform .1s,box-shadow .1s}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--k)}
+.btn.dark{background:var(--k);color:var(--y);box-shadow:4px 4px 0 var(--p)}
+.btn small{display:block;font-weight:500;font-size:13px}
+button:focus-visible,input:focus-visible{outline:3px solid var(--b);outline-offset:3px}
+.count{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+.step{display:flex;align-items:center;border:3px solid var(--k);background:var(--w);box-shadow:4px 4px 0 var(--k)}
+.step button{width:48px;height:52px;border:0;background:transparent;font:900 24px Rubik;color:var(--k);cursor:pointer}
+.step output{font:400 22px 'Rubik Mono One',sans-serif;min-width:36px;text-align:center}
+.need{flex:1 1 170px;border:3px solid var(--k);background:var(--b);color:var(--w);padding:6px 14px;box-shadow:4px 4px 0 var(--k);display:flex;flex-direction:column;justify-content:center}
+.need b{font:400 20px 'Rubik Mono One',sans-serif}
+.need span{font-size:13px}
+.order{list-style:none;margin:8px 0;padding:0}
+.order li{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:3px dashed var(--k);font-weight:700}
+.order li span:last-child{white-space:nowrap}
+.total{display:flex;justify-content:space-between;align-items:baseline;padding-top:10px;font:400 20px 'Rubik Mono One',sans-serif}
+.names .chip{text-decoration:none;background:var(--w);color:var(--k)}
+.names .chip.out{text-decoration:line-through;color:#777}
+.names .chip.hot{background:var(--b);color:var(--w)}
+.names .chip.win{background:var(--p);transform:rotate(-4deg) scale(1.12);font-weight:900}
+.payout{margin-top:16px;min-height:10px}
+.payout b{display:block;font:400 clamp(24px,7vw,32px)/1.05 'Rubik Mono One',sans-serif;text-transform:uppercase}
+.payout span{font-size:15px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.note{margin:28px 0 0;font-size:13px;text-align:center}
+.share{margin-top:16px;align-self:flex-start;display:inline-flex;align-items:center;gap:8px;background:var(--p)}
+.share[hidden]{display:none}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--k);color:var(--y);font:900 15px Rubik,sans-serif;padding:12px 16px;border:3px solid var(--k);box-shadow:4px 4px 0 var(--p);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50}
+.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translate(-6px,2px)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,1px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<div class="toast" id="toast" role="status"></div>
+<div class="wrap" id="app">
+  <div class="top">
+    <span class="tag">ПІЦА.РАНДОМ</span>
+    <button class="mute" id="mute" aria-label="Звук увімкнено"></button>
+  </div>
+  <h1>Яку піцу ми сьогодні їмо?</h1>
+  <p class="sub">Не сперечайтесь. Просто крутіть.</p>
+
+  <div class="wheelbox">
+    <canvas id="wheel" width="920" height="920" role="img" aria-label="Колесо з піцами"></canvas>
+    <button class="spin" id="spinBtn">ТИЦЬ</button>
+  </div>
+
+  <div class="verdict" aria-live="polite">
+    <span class="v-lbl" id="vLbl">Колесо чекає</span>
+    <div class="v-name wait" id="vName">Тисни «тиць»</div>
+    <div class="pills" id="vPills"></div>
+    <button class="btn share" id="shareBtn" hidden>Поділитися результатом</button>
+  </div>
+
+  <section class="card">
+    <h2>Що на колесі</h2>
+    <p class="hint">Тисни на піцу, щоб викинути її з колеса або повернути.</p>
+    <div class="row quick" style="margin-bottom:12px">
+      <button class="chip" data-q="all">Усі</button>
+      <button class="chip" data-q="veg">Без м'яса</button>
+      <button class="chip" data-q="nosea">Без морепродуктів</button>
+      <button class="chip" data-q="none">Прибрати все</button>
+    </div>
+    <div class="row" id="pizzas"></div>
+    <form class="row" id="addPizza" style="margin-top:14px">
+      <input type="text" id="newName" placeholder="Своя піца" aria-label="Назва піци">
+      <input type="number" id="newPrice" placeholder="₴" min="0" style="width:96px" aria-label="Ціна">
+      <button class="btn">Додати</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Скільки нас</h2>
+    <div class="count" style="margin-top:12px">
+      <div class="step"><button id="pMinus" aria-label="Менше">−</button><output id="people">4</output><button id="pPlus" aria-label="Більше">+</button></div>
+      <div class="need"><b id="need">2 піци</b><span id="needHint"></span></div>
+    </div>
+    <p class="hint" style="margin:16px 0 8px">Наскільки голодні?</p>
+    <div class="row mode" id="hunger">
+      <button class="chip" data-s="2">Перекусити · 2</button>
+      <button class="chip" data-s="3">Нормально · 3</button>
+      <button class="chip" data-s="4">Звір · 4</button>
+    </div>
+    <p class="hint" style="margin:16px 0 8px">Піци однакові чи різні?</p>
+    <div class="row mode">
+      <button class="chip" id="sameBtn">Усі однакові</button>
+      <button class="chip" id="mixBtn">Різні — крутимо на кожну</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Замовлення</h2>
+    <ul class="order" id="order"></ul>
+    <div class="total"><span>Разом</span><span id="total">—</span></div>
+    <button class="btn" id="resetOrder" style="margin-top:14px">Почати заново</button>
+  </section>
+
+  <section class="card" id="payCard">
+    <h2>А платить…</h2>
+    <p class="hint">Впиши всіх, хто їсть. Тисни на ім'я, щоб прибрати.</p>
+    <form class="row" id="addName">
+      <input type="text" id="nameIn" placeholder="Ім'я" aria-label="Ім'я">
+      <button class="btn">Додати</button>
+    </form>
+    <div class="row names" id="names" style="margin-top:14px"></div>
+    <div class="payout" id="payout" aria-live="polite"></div>
+    <button class="btn share" id="shareBtn2" hidden>Поділитися вироком</button>
+    <div class="grid2">
+      <button class="btn" id="splitBtn">Скинутись<small id="splitHint">порівну на всіх</small></button>
+      <button class="btn dark" id="oneBtn">Платить один<small>вирішить рандом</small></button>
+    </div>
+  </section>
+
+  <p class="note">Ціни приблизні, за 30 см. Зміни список під свою піцерію.</p>
+</div>
+
+<script>
+{
+const DEF=[["Маргарита",229,"veg"],["4 сири",319,"veg"],["Гавайська",289,"meat"],["Пепероні",299,"meat"],
+ ["Карбонара",309,"meat"],["Баварська",319,"meat"],["М'ясна",349,"meat"],["Цезар",309,"meat"],
+ ["З креветками",389,"sea"],["Морська",399,"sea"],["Грибна",259,"veg"],["Овочева",249,"veg"],["Барбекю",329,"meat"],["Діабло",319,"meat"]];
+const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem("pzc_"+k));return v??d}catch(e){return d}};
+const save=(k,v)=>{try{localStorage.setItem("pzc_"+k,JSON.stringify(v))}catch(e){}};
+let pizzas=load("pizzas",DEF.map(([n,p,t],i)=>({n,p,t,on:i<8})));
+let names=load("names",[]),people=load("people",4),slices=load("slices",3),mix=load("mix",false),sound=load("sound",true);
+let order=[],theta=0,spinning=false,rolling=false,payer=-1;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uah=n=>Math.round(n).toLocaleString("uk-UA")+" ₴";
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const active=()=>pizzas.filter(p=>p.on);
+const need=()=>Math.max(1,Math.ceil(people*slices/8));
+const piz=n=>n%10===1&&n%100!==11?"піца":n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?"піци":"піц";
+const ppl=n=>n%10===1&&n%100!==11?"людину":n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?"людини":"людей";
+const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
+const SQ={veg:"#2E8A43",meat:"#FF5FA2",sea:"#2D5BFF"};
+const LBL=["Доля вирішила:","Всесвіт каже:","Без варіантів:","Колесо не помиляється:","Сьогодні в меню:"];
+const PAY=["Ми тебе любимо. Але гроші — з тебе.","Карма. Плати.","Сьогодні ти — спонсор вечора.","Нічого особистого, просто рандом.","Апеляцію не прийнято."];
+
+/* analytics: works with Umami, Plausible or Vercel Analytics if their script is on the page */
+function track(name,props={}){try{
+ if(window.umami)window.umami.track(name,props);
+ if(window.plausible)window.plausible(name,{props});
+ if(window.va)window.va("event",{name,data:props});
+}catch(e){}}
+let lastPizza=null;
+function shareText(){
+ let t=lastPizza?`Колесо вирішило: ${lastPizza}.`:"Не можемо обрати піцу.";
+ if(payer>=0&&names[payer])t+=` Платить ${names[payer]}.`;
+ return t+" Крутни і ти:";
+}
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("on"),2200)}
+async function share(where){
+ const url=location.origin&&location.origin!=="null"?location.origin+location.pathname:location.href;
+ const text=shareText();track("share",{where,pizza:lastPizza||"",payer:payer>=0?1:0});
+ try{if(navigator.share){await navigator.share({title:"Яку піцу ми сьогодні їмо?",text,url});return}}catch(e){if(e&&e.name==="AbortError")return}
+ try{await navigator.clipboard.writeText(text+" "+url);toast("Скопійовано — кидай у чат")}catch(e){toast("Скопіюй посилання з адресного рядка")}
+}
+/* sound */
+let ac=null;
+function beep(f,d,type="square",v=.05){if(!sound)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+ const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;
+ g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+d);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+const fanfare=()=>[392,523,659,784].forEach((f,i)=>setTimeout(()=>beep(f,.22,"square",.05),i*100));
+const ICON_ON='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.6" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>';
+const ICON_OFF='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.6" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M16 9l6 6M22 9l-6 6"/></svg>';
+function renderMute(){$("mute").innerHTML=sound?ICON_ON:ICON_OFF;$("mute").setAttribute("aria-label",sound?"Вимкнути звук":"Увімкнути звук")}
+
+/* wheel */
+const S=920,C=S/2,R=410;
+const art=document.createElement("canvas");art.width=art.height=S;const ax=art.getContext("2d");
+const FILL=["#fff","#FF5FA2","#fff","#2D5BFF"];
+function buildArt(){
+ const L=active(),g=ax;g.clearRect(0,0,S,S);
+ g.fillStyle="#fff";g.strokeStyle="#111";g.lineWidth=10;
+ if(!L.length){g.beginPath();g.arc(C,C,R,0,7);g.fill();g.stroke();
+  g.fillStyle="#111";g.font="900 40px Rubik, sans-serif";g.textAlign="center";g.fillText("Обери піци ↓",C,C+R*.62);return}
+ const n=L.length,a=Math.PI*2/n;
+ L.forEach((p,i)=>{const s0=-Math.PI/2+i*a;
+  let f=FILL[i%4];if(i===n-1&&n>1&&f==="#fff")f="#FFE600";
+  g.beginPath();g.moveTo(C,C);g.arc(C,C,R,s0,s0+a);g.closePath();g.fillStyle=f;g.fill();g.lineWidth=8;g.strokeStyle="#111";g.stroke();
+  g.save();g.translate(C,C);g.rotate(s0+a/2);
+  const fs=Math.max(20,Math.min(32,a*R*.3));g.font=`900 ${fs}px Rubik, sans-serif`;g.textAlign="right";g.textBaseline="middle";
+  g.fillStyle=f==="#2D5BFF"?"#fff":"#111";
+  let t=p.n.toUpperCase();const max=R*.58;while(g.measureText(t).width>max&&t.length>3)t=t.slice(0,-2)+"…";
+  g.fillText(t,R-28,2);g.restore()});
+ g.beginPath();g.arc(C,C,R,0,7);g.lineWidth=12;g.strokeStyle="#111";g.stroke();
+}
+const cv=$("wheel"),cx=cv.getContext("2d");let kick=0;
+function render(){
+ cx.clearRect(0,0,S,S);
+ cx.fillStyle="#111";cx.beginPath();cx.arc(C+16,C+16,R+6,0,7);cx.fill();
+ cx.save();cx.translate(C,C);cx.rotate(theta);cx.drawImage(art,-C,-C);cx.restore();
+ cx.save();cx.translate(C,C-R+6);cx.rotate(kick);
+ cx.beginPath();cx.moveTo(-38,-52);cx.lineTo(38,-52);cx.lineTo(0,34);cx.closePath();
+ cx.fillStyle="#FFE600";cx.fill();cx.lineWidth=9;cx.lineJoin="round";cx.strokeStyle="#111";cx.stroke();cx.restore();
+ kick*=.8;
+}
+function loop(){render();requestAnimationFrame(loop)}
+
+function setVerdict(l,n,pills,state){
+ $("vLbl").textContent=l;const v=$("vName");v.textContent=n;v.classList.toggle("wait",state!=="win");
+ v.classList.remove("pop");if(state==="win"){void v.offsetWidth;v.classList.add("pop")}
+ $("vPills").innerHTML=pills.map(([t,c])=>`<span class="pill${c?" b":""}">${esc(t)}</span>`).join("");
+}
+function spin(){
+ const L=active();if(spinning)return;
+ if(!L.length){setVerdict("Колесо порожнє","Обери піци",[],"wait");return}
+ if(mix&&order.length>=need())order=[];
+ spinning=true;$("spinBtn").disabled=true;payer=-1;$("payout").innerHTML="";renderNames();
+ setVerdict("Крутимо…","…",[],"wait");
+ const n=L.length,a=Math.PI*2/n,i=Math.floor(Math.random()*n),TAU=Math.PI*2;
+ const tgt=-(i+.5)*a+(Math.random()-.5)*a*.7,t0=theta;
+ const delta=TAU*7+(((tgt-t0)%TAU)+TAU)%TAU,dur=reduce?60:5200,start=performance.now();let last=-1;
+ const step=now=>{const p=Math.min(1,(now-start)/dur),e=1-Math.pow(1-p,4);theta=t0+delta*e;
+  const idx=Math.floor((((-theta)%TAU)+TAU)%TAU/a);
+  if(idx!==last){if(last>=0){beep(1000,.025,"square",.03);kick=-.3}last=idx}
+  if(p<1)requestAnimationFrame(step);else{spinning=false;$("spinBtn").disabled=false;win(L[i])}};
+ requestAnimationFrame(step);
+}
+function win(p){
+ const n=need();
+ if(mix){order.push({n:p.n,p:p.p,q:1});const left=n-order.length;
+  setVerdict(`Піца ${order.length} з ${n}:`,p.n,left>0?[[`ще ${left} — крутіть далі`,1]]:[["замовлення готове",1],[uah(sum()),0]],"win");
+ }else{order=[{n:p.n,p:p.p,q:n}];
+  setVerdict(pick(LBL),p.n,[[`${n} × 30 см`,0],[uah(p.p*n),0],[`${n*8} шматків на ${people}`,1]],"win")}
+ lastPizza=p.n;$("shareBtn").hidden=false;track("spin",{pizza:p.n,mode:mix?"mix":"same",people});
+ renderOrder();fanfare();confetti();
+ document.querySelector(".verdict").classList.remove("shake");void document.body.offsetWidth;document.querySelector(".verdict").classList.add("shake");
+}
+
+/* confetti */
+const cf=$("confetti"),fx=cf.getContext("2d");let parts=[];
+function confetti(){if(reduce)return;cf.width=innerWidth;cf.height=innerHeight;
+ const cols=["#111","#FF5FA2","#2D5BFF","#fff"],start=!parts.length;
+ for(let i=0;i<130;i++)parts.push({x:innerWidth/2,y:innerHeight*.4,vx:(Math.random()-.5)*17,vy:-Math.random()*16-4,r:Math.random()*6.3,vr:(Math.random()-.5)*.4,c:cols[i%4],s:8+Math.random()*10,life:130});
+ if(start)requestAnimationFrame(cfLoop)}
+function cfLoop(){fx.clearRect(0,0,cf.width,cf.height);
+ parts=parts.filter(p=>p.life-->0&&p.y<cf.height+30);
+ for(const p of parts){p.vy+=.45;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;fx.save();fx.translate(p.x,p.y);fx.rotate(p.r);
+  fx.fillStyle=p.c;fx.strokeStyle="#111";fx.lineWidth=2;fx.fillRect(-p.s/2,-p.s/3,p.s,p.s/1.5);fx.strokeRect(-p.s/2,-p.s/3,p.s,p.s/1.5);fx.restore()}
+ if(parts.length)requestAnimationFrame(cfLoop);else fx.clearRect(0,0,cf.width,cf.height)}
+
+/* UI */
+function renderPizzas(){
+ $("pizzas").innerHTML=pizzas.map((p,i)=>`<button class="chip" data-i="${i}" aria-pressed="${p.on}"><span class="sq" style="background:${SQ[p.t]||"#ccc"}"></span>${esc(p.n)} <span class="pr">${uah(p.p)}</span></button>`).join("");
+ buildArt();save("pizzas",pizzas);
+}
+function sum(){return order.reduce((s,o)=>s+o.p*o.q,0)}
+function renderNeed(){
+ const n=need();$("people").textContent=people;
+ $("need").textContent=`${n} ${piz(n)}`;
+ $("needHint").textContent=`${people} × ${slices} = ${people*slices} шматків, у піці 8`;
+ document.querySelectorAll("#hunger .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.s===slices));
+ $("sameBtn").setAttribute("aria-pressed",!mix);$("mixBtn").setAttribute("aria-pressed",mix);
+ if(!mix&&order.length===1)order[0].q=n;
+ if(mix&&order.length>n)order=order.slice(0,n);
+ renderOrder();save("people",people);save("slices",slices);save("mix",mix);
+}
+function renderOrder(){
+ $("order").innerHTML=order.length?order.map(o=>`<li><span>${o.q} × ${esc(o.n)}</span><span>${uah(o.p*o.q)}</span></li>`).join("")
+  :`<li><span style="font-weight:500;color:#555">Поки порожньо — тицяй колесо</span><span></span></li>`;
+ $("total").textContent=order.length?uah(sum()):"—";
+ const k=names.length||people;$("splitHint").textContent=order.length?`по ${uah(Math.ceil(sum()/k))} з кожного`:"порівну на всіх";
+}
+function renderNames(){
+ $("names").innerHTML=names.length?names.map((n,i)=>`<button class="chip${payer<0?"":i===payer?" win":" out"}" data-i="${i}" aria-label="Прибрати ${esc(n)}">${esc(n)} ✕</button>`).join("")
+  :`<span class="hint" style="margin:0">Поки нікого. Додай хоча б двох.</span>`;
+ save("names",names);renderOrder();
+}
+
+$("spinBtn").onclick=()=>{beep(1,.001);spin()};
+$("mute").onclick=()=>{sound=!sound;save("sound",sound);renderMute()};
+$("pizzas").onclick=e=>{const b=e.target.closest(".chip");if(!b||spinning)return;pizzas[b.dataset.i].on=!pizzas[b.dataset.i].on;renderPizzas()};
+document.querySelector(".quick").onclick=e=>{const q=e.target.closest(".chip")?.dataset.q;if(!q||spinning)return;
+ pizzas.forEach(p=>p.on=q==="all"?true:q==="none"?false:q==="veg"?p.t==="veg":p.t!=="sea");renderPizzas()};
+$("addPizza").onsubmit=e=>{e.preventDefault();const n=$("newName").value.trim();if(!n||spinning)return;
+ pizzas.push({n:n.slice(0,30),p:Math.max(0,+$("newPrice").value||0),t:"veg",on:true});$("newName").value="";$("newPrice").value="";renderPizzas()};
+$("pMinus").onclick=()=>{people=Math.max(1,people-1);renderNeed()};
+$("pPlus").onclick=()=>{people=Math.min(50,people+1);renderNeed()};
+$("hunger").onclick=e=>{const b=e.target.closest(".chip");if(b){slices=+b.dataset.s;renderNeed()}};
+$("sameBtn").onclick=()=>{mix=false;order=[];renderNeed()};
+$("mixBtn").onclick=()=>{mix=true;order=[];renderNeed()};
+$("resetOrder").onclick=()=>{order=[];payer=-1;renderOrder();renderNames();$("payout").innerHTML="";setVerdict("Колесо чекає","Тисни «тиць»",[],"wait")};
+$("addName").onsubmit=e=>{e.preventDefault();const n=$("nameIn").value.trim();if(!n||rolling)return;names.push(n.slice(0,24));$("nameIn").value="";payer=-1;renderNames()};
+$("names").onclick=e=>{const b=e.target.closest(".chip");if(!b||rolling)return;names.splice(+b.dataset.i,1);payer=-1;renderNames()};
+$("splitBtn").onclick=()=>{
+ $("shareBtn2").hidden=true;
+ if(!order.length){$("payout").innerHTML="<span>Спочатку тицьни колесо.</span>";return}
+ const k=names.length||people;payer=-1;renderNames();track("split",{people:k});
+ $("payout").innerHTML=`<b>По ${esc(uah(Math.ceil(sum()/k)))}</b><span>${esc(uah(sum()))} на ${k} ${ppl(k)}. Чесно і нудно.</span>`;
+};
+$("oneBtn").onclick=()=>{
+ if(rolling)return;
+ if(names.length<2){$("payout").innerHTML="<span>Додай хоча б двох людей.</span>";return}
+ rolling=true;payer=-1;renderNames();const w=Math.floor(Math.random()*names.length),steps=names.length*4+w;let s=0;
+ $("payout").innerHTML="<span>Шукаємо спонсора…</span>";
+ const tick=()=>{$("names").querySelectorAll(".chip").forEach((c,j)=>c.classList.toggle("hot",j===s%names.length));beep(500+s*10,.04,"square",.03);
+  if(s<steps){s++;setTimeout(tick,reduce?5:50+s*s*.9)}else{rolling=false;payer=w;renderNames();fanfare();confetti();$("shareBtn2").hidden=false;track("payer_roll",{people:names.length});
+   $("payout").innerHTML=`<b>${esc(names[w])}!</b><span>${order.length?esc(uah(sum()))+" з тебе. ":""}${esc(pick(PAY))}</span>`;
+   $("payCard").classList.remove("shake");void document.body.offsetWidth;$("payCard").classList.add("shake")}};
+ tick();
+};
+$("oneBtn").addEventListener("click",()=>beep(1,.001));
+
+$("shareBtn").onclick=()=>share("verdict");$("shareBtn2").onclick=()=>share("payer");
+renderMute();renderPizzas();renderNeed();renderNames();
+requestAnimationFrame(loop);
+document.fonts?.ready.then(()=>buildArt());
+}
+</script>
+</body>
+</html>
