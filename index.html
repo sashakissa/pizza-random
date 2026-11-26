@@ -45,6 +45,8 @@ h1{font:400 clamp(28px,8.4vw,44px)/1.04 'Rubik Mono One',sans-serif;text-transfo
 .v-name.wait{background:var(--w);color:var(--k);box-shadow:6px 6px 0 var(--k)}
 .v-name.pop{animation:pop .45s cubic-bezier(.2,1.8,.4,1)}
 @keyframes pop{0%{transform:rotate(-12deg) scale(.6)}100%{transform:rotate(-2deg) scale(1)}}
+.v-desc{margin:14px 0 0;font-size:15px;max-width:46ch}
+.v-desc:empty{display:none}
 .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .pill{border:3px solid var(--k);background:var(--w);padding:5px 10px;font-weight:900;white-space:nowrap}
 .pill.b{background:var(--b);color:var(--w);font-weight:700}
@@ -56,6 +58,7 @@ h2{font:400 19px/1.2 'Rubik Mono One',sans-serif;text-transform:uppercase;margin
 .chip:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--k)}
 .chip[aria-pressed=true]{background:var(--y)}
 .chip[aria-pressed=false]{background:#eee;color:#666;text-decoration:line-through}
+.chip.nofit{opacity:.45;text-decoration:none}
 .chip .pr{font-weight:500;font-size:13px;opacity:.75;white-space:nowrap}
 .chip .sq{width:12px;height:12px;border:2px solid var(--k);flex:none}
 .quick .chip{background:var(--k);color:var(--y);text-decoration:none}
@@ -117,6 +120,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--b);outline-offs
   <div class="verdict" aria-live="polite">
     <span class="v-lbl" id="vLbl">Колесо чекає</span>
     <div class="v-name wait" id="vName">Тисни «тиць»</div>
+    <p class="v-desc" id="vDesc"></p>
     <div class="pills" id="vPills"></div>
     <button class="btn share" id="shareBtn" hidden>Поділитися результатом</button>
   </div>
@@ -127,7 +131,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--b);outline-offs
     <div class="row quick" style="margin-bottom:12px">
       <button class="chip" data-q="all">Усі</button>
       <button class="chip" data-q="veg">Без м'яса</button>
-      <button class="chip" data-q="nosea">Без морепродуктів</button>
+      <button class="chip" data-q="nomush">Без грибів</button>
+      <button class="chip" data-q="nopickle">Без солоних огірків</button>
       <button class="chip" data-q="none">Прибрати все</button>
     </div>
     <div class="row" id="pizzas"></div>
@@ -143,6 +148,11 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--b);outline-offs
     <div class="count" style="margin-top:12px">
       <div class="step"><button id="pMinus" aria-label="Менше">−</button><output id="people">4</output><button id="pPlus" aria-label="Більше">+</button></div>
       <div class="need"><b id="need">2 піци</b><span id="needHint"></span></div>
+    </div>
+    <p class="hint" style="margin:16px 0 8px">Розмір</p>
+    <div class="row mode">
+      <button class="chip" id="stdBtn">450 г · ~8 шматків</button>
+      <button class="chip" id="xxlBtn">XXL · ~12 шматків</button>
     </div>
     <p class="hint" style="margin:16px 0 8px">Наскільки голодні?</p>
     <div class="row mode" id="hunger">
@@ -180,25 +190,42 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--b);outline-offs
     </div>
   </section>
 
-  <p class="note">Ціни приблизні, за 30 см. Зміни список під свою піцерію.</p>
+  <p class="note">Меню і ціни — Маркетопт. Шматки рахуємо приблизно: 450 г ≈ 8, XXL ≈ 12.</p>
 </div>
 
 <script>
 {
-const DEF=[["Маргарита",229,"veg"],["4 сири",319,"veg"],["Гавайська",289,"meat"],["Пепероні",299,"meat"],
- ["Карбонара",309,"meat"],["Баварська",319,"meat"],["М'ясна",349,"meat"],["Цезар",309,"meat"],
- ["З креветками",389,"sea"],["Морська",399,"sea"],["Грибна",259,"veg"],["Овочева",249,"veg"],["Барбекю",329,"meat"],["Діабло",319,"meat"]];
-const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem("pzc_"+k));return v??d}catch(e){return d}};
-const save=(k,v)=>{try{localStorage.setItem("pzc_"+k,JSON.stringify(v))}catch(e){}};
-let pizzas=load("pizzas",DEF.map(([n,p,t],i)=>({n,p,t,on:i<8})));
-let names=load("names",[]),people=load("people",4),slices=load("slices",3),mix=load("mix",false),sound=load("sound",true);
+/* Меню Маркетопт: [назва, ціна 450 г, ціна XXL або null, тип, склад] */
+const DEF=[
+ ["Прошутто",100,170,"meat","Болонська суміш, моцарела, ковбаса салямі, базилік, орегано, оливкова олія"],
+ ["Ліга чемпіонів",110,null,"meat","Філе куряче копчене, грудинка копчена, ковбаски копчені, моцарела, чеддер, перець болгарський, ковбаса сервелат, огірок солоний, цибуля, помідор"],
+ ["Маргарита",100,null,"veg","Болонська суміш, моцарела, помідор, базилік сушений"],
+ ["Палермо",100,170,"meat","Балик, гриби печериці, грудинка копчена, ковбаса, моцарела, болонська суміш, помідор, маслини"],
+ ["4 м'яса",150,null,"meat","Болонська суміш, філе куряче смажене, грудинка копчена, філе куряче в/к, моцарела, соус солодкий чилі, цибуля, балик"],
+ ["Медовий чиз",135,null,"veg","Мед, груша, вершки, гауда, моцарела, сир з пліснявою, чеддер, філадельфія"],
+ ["Мексикана",100,170,"meat","Болонська суміш, моцарела, гриби, філе куряче, перець чилі, перець болгарський, кукурудза, цибуля кримська"],
+ ["Нью-Йорк",100,170,"meat","Вершки, моцарела, ковбаски мисливські, філе куряче, цибуля кримська, балик"],
+ ["Поло",100,170,"meat","Болонська суміш, моцарела, гриби, куряче філе (обсмажене), оливкова олія, зелень свіжа"],
+ ["Чікен чіз",100,170,"meat","Вершки, грудинка копчена, філе куряче смажене, цибуля червона, чеддер, моцарела, помідор, огірок солоний, кунжут"],
+ ["4 сири",100,170,"veg","Моцарела, чеддер, гауда, сир з блакитною пліснявою, соус"],
+ ["Селянська",100,170,"meat","Гриби печериці, огірок солоний, ковбаски копчені, моцарела, філе куряче смажене, часник, вершки"],
+ ["Мисливська",100,170,"meat","Болонська суміш, моцарела, ковбаски мисливські, грудинка копчена, гриби"],
+ ["Дікарні",100,170,"meat","Болонська суміш, моцарела, балик, грудинка копчена"],
+ ["Гавайська",100,170,"meat","Болонська суміш, куряче філе, ананас, моцарела"]];
+const SL={std:8,xxl:12},SZ={std:"450 г",xxl:"XXL"};
+const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem("pzm_"+k));return v??d}catch(e){return d}};
+const save=(k,v)=>{try{localStorage.setItem("pzm_"+k,JSON.stringify(v))}catch(e){}};
+let pizzas=load("pizzas",DEF.map(([n,p,x,t,d])=>({n,p,x,t,d,on:true})));
+let names=load("names",[]),people=load("people",4),slices=load("slices",3),mix=load("mix",false),size=load("size","std"),sound=load("sound",true);
 let order=[],theta=0,spinning=false,rolling=false,payer=-1;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uah=n=>Math.round(n).toLocaleString("uk-UA")+" ₴";
 const pick=a=>a[Math.floor(Math.random()*a.length)];
-const active=()=>pizzas.filter(p=>p.on);
-const need=()=>Math.max(1,Math.ceil(people*slices/8));
+const fits=p=>size==="std"||p.x!=null;
+const price=p=>size==="xxl"?p.x:p.p;
+const active=()=>pizzas.filter(p=>p.on&&fits(p));
+const need=()=>Math.max(1,Math.ceil(people*slices/SL[size]));
 const piz=n=>n%10===1&&n%100!==11?"піца":n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?"піци":"піц";
 const ppl=n=>n%10===1&&n%100!==11?"людину":n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?"людини":"людей";
 const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
@@ -249,9 +276,11 @@ function buildArt(){
   let f=FILL[i%4];if(i===n-1&&n>1&&f==="#fff")f="#FFE600";
   g.beginPath();g.moveTo(C,C);g.arc(C,C,R,s0,s0+a);g.closePath();g.fillStyle=f;g.fill();g.lineWidth=8;g.strokeStyle="#111";g.stroke();
   g.save();g.translate(C,C);g.rotate(s0+a/2);
-  const fs=Math.max(20,Math.min(32,a*R*.3));g.font=`900 ${fs}px Rubik, sans-serif`;g.textAlign="right";g.textBaseline="middle";
+  let fs=Math.max(18,Math.min(32,a*R*.3));g.textAlign="right";g.textBaseline="middle";
+  const lbl=p.n.toUpperCase();g.font=`900 ${fs}px Rubik, sans-serif`;
+  while(g.measureText(lbl).width>R*.6&&fs>18){fs--;g.font=`900 ${fs}px Rubik, sans-serif`}
   g.fillStyle=f==="#2D5BFF"?"#fff":"#111";
-  let t=p.n.toUpperCase();const max=R*.58;while(g.measureText(t).width>max&&t.length>3)t=t.slice(0,-2)+"…";
+  let t=lbl;const max=R*.6;while(g.measureText(t).width>max&&t.length>3)t=t.slice(0,-2)+"…";
   g.fillText(t,R-28,2);g.restore()});
  g.beginPath();g.arc(C,C,R,0,7);g.lineWidth=12;g.strokeStyle="#111";g.stroke();
 }
@@ -267,8 +296,8 @@ function render(){
 }
 function loop(){render();requestAnimationFrame(loop)}
 
-function setVerdict(l,n,pills,state){
- $("vLbl").textContent=l;const v=$("vName");v.textContent=n;v.classList.toggle("wait",state!=="win");
+function setVerdict(l,n,pills,state,desc=""){
+ $("vDesc").textContent=desc;$("vLbl").textContent=l;const v=$("vName");v.textContent=n;v.classList.toggle("wait",state!=="win");
  v.classList.remove("pop");if(state==="win"){void v.offsetWidth;v.classList.add("pop")}
  $("vPills").innerHTML=pills.map(([t,c])=>`<span class="pill${c?" b":""}">${esc(t)}</span>`).join("");
 }
@@ -289,10 +318,11 @@ function spin(){
 }
 function win(p){
  const n=need();
- if(mix){order.push({n:p.n,p:p.p,q:1});const left=n-order.length;
-  setVerdict(`Піца ${order.length} з ${n}:`,p.n,left>0?[[`ще ${left} — крутіть далі`,1]]:[["замовлення готове",1],[uah(sum()),0]],"win");
- }else{order=[{n:p.n,p:p.p,q:n}];
-  setVerdict(pick(LBL),p.n,[[`${n} × 30 см`,0],[uah(p.p*n),0],[`${n*8} шматків на ${people}`,1]],"win")}
+ const pr=price(p),sz=SZ[size];
+ if(mix){order.push({n:p.n,p:pr,q:1,sz});const left=n-order.length;
+  setVerdict(`Піца ${order.length} з ${n}:`,p.n,left>0?[[`ще ${left} — крутіть далі`,1]]:[["замовлення готове",1],[uah(sum()),0]],"win",p.d||"");
+ }else{order=[{n:p.n,p:pr,q:n,sz}];
+  setVerdict(pick(LBL),p.n,[[`${n} × ${sz}`,0],[uah(pr*n),0],[`${n*SL[size]} шматків на ${people}`,1]],"win",p.d||"")}
  lastPizza=p.n;$("shareBtn").hidden=false;track("spin",{pizza:p.n,mode:mix?"mix":"same",people});
  renderOrder();fanfare();confetti();
  document.querySelector(".verdict").classList.remove("shake");void document.body.offsetWidth;document.querySelector(".verdict").classList.add("shake");
@@ -312,22 +342,23 @@ function cfLoop(){fx.clearRect(0,0,cf.width,cf.height);
 
 /* UI */
 function renderPizzas(){
- $("pizzas").innerHTML=pizzas.map((p,i)=>`<button class="chip" data-i="${i}" aria-pressed="${p.on}"><span class="sq" style="background:${SQ[p.t]||"#ccc"}"></span>${esc(p.n)} <span class="pr">${uah(p.p)}</span></button>`).join("");
+ $("pizzas").innerHTML=pizzas.map((p,i)=>`<button class="chip${fits(p)?"":" nofit"}" data-i="${i}" aria-pressed="${p.on}" title="${esc(p.d||"")}"><span class="sq" style="background:${SQ[p.t]||"#ccc"}"></span>${esc(p.n)} <span class="pr">${fits(p)?uah(price(p)):"немає XXL"}</span></button>`).join("");
  buildArt();save("pizzas",pizzas);
 }
 function sum(){return order.reduce((s,o)=>s+o.p*o.q,0)}
 function renderNeed(){
  const n=need();$("people").textContent=people;
  $("need").textContent=`${n} ${piz(n)}`;
- $("needHint").textContent=`${people} × ${slices} = ${people*slices} шматків, у піці 8`;
+ $("needHint").textContent=`${people} × ${slices} = ${people*slices} шматків, у піці ${SZ[size]} ≈ ${SL[size]}`;
+ $("stdBtn").setAttribute("aria-pressed",size==="std");$("xxlBtn").setAttribute("aria-pressed",size==="xxl");
  document.querySelectorAll("#hunger .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.s===slices));
  $("sameBtn").setAttribute("aria-pressed",!mix);$("mixBtn").setAttribute("aria-pressed",mix);
  if(!mix&&order.length===1)order[0].q=n;
  if(mix&&order.length>n)order=order.slice(0,n);
- renderOrder();save("people",people);save("slices",slices);save("mix",mix);
+ renderOrder();save("people",people);save("slices",slices);save("mix",mix);save("size",size);
 }
 function renderOrder(){
- $("order").innerHTML=order.length?order.map(o=>`<li><span>${o.q} × ${esc(o.n)}</span><span>${uah(o.p*o.q)}</span></li>`).join("")
+ $("order").innerHTML=order.length?order.map(o=>`<li><span>${o.q} × ${esc(o.n)}${o.sz?` · ${esc(o.sz)}`:""}</span><span>${uah(o.p*o.q)}</span></li>`).join("")
   :`<li><span style="font-weight:500;color:#555">Поки порожньо — тицяй колесо</span><span></span></li>`;
  $("total").textContent=order.length?uah(sum()):"—";
  const k=names.length||people;$("splitHint").textContent=order.length?`по ${uah(Math.ceil(sum()/k))} з кожного`:"порівну на всіх";
@@ -342,12 +373,16 @@ $("spinBtn").onclick=()=>{beep(1,.001);spin()};
 $("mute").onclick=()=>{sound=!sound;save("sound",sound);renderMute()};
 $("pizzas").onclick=e=>{const b=e.target.closest(".chip");if(!b||spinning)return;pizzas[b.dataset.i].on=!pizzas[b.dataset.i].on;renderPizzas()};
 document.querySelector(".quick").onclick=e=>{const q=e.target.closest(".chip")?.dataset.q;if(!q||spinning)return;
- pizzas.forEach(p=>p.on=q==="all"?true:q==="none"?false:q==="veg"?p.t==="veg":p.t!=="sea");renderPizzas()};
+ const has=(p,w)=>(p.d||"").toLowerCase().includes(w);
+ pizzas.forEach(p=>{if(q==="all")p.on=true;else if(q==="none")p.on=false;else if(q==="veg")p.on=p.t==="veg";
+  else if(q==="nomush"){if(has(p,"гриб"))p.on=false}else if(q==="nopickle"){if(has(p,"огір"))p.on=false}});renderPizzas()};
 $("addPizza").onsubmit=e=>{e.preventDefault();const n=$("newName").value.trim();if(!n||spinning)return;
- pizzas.push({n:n.slice(0,30),p:Math.max(0,+$("newPrice").value||0),t:"veg",on:true});$("newName").value="";$("newPrice").value="";renderPizzas()};
+ const pv=Math.max(0,+$("newPrice").value||0);pizzas.push({n:n.slice(0,30),p:pv,x:pv,t:"veg",d:"",on:true});$("newName").value="";$("newPrice").value="";renderPizzas()};
 $("pMinus").onclick=()=>{people=Math.max(1,people-1);renderNeed()};
 $("pPlus").onclick=()=>{people=Math.min(50,people+1);renderNeed()};
 $("hunger").onclick=e=>{const b=e.target.closest(".chip");if(b){slices=+b.dataset.s;renderNeed()}};
+$("stdBtn").onclick=()=>{if(spinning)return;size="std";order=[];renderNeed();renderPizzas()};
+$("xxlBtn").onclick=()=>{if(spinning)return;size="xxl";order=[];renderNeed();renderPizzas()};
 $("sameBtn").onclick=()=>{mix=false;order=[];renderNeed()};
 $("mixBtn").onclick=()=>{mix=true;order=[];renderNeed()};
 $("resetOrder").onclick=()=>{order=[];payer=-1;renderOrder();renderNames();$("payout").innerHTML="";setVerdict("Колесо чекає","Тисни «тиць»",[],"wait")};
