@@ -16,6 +16,9 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#FFE600">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Піца.Рандом">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFE600'/%3E%3Cpath d='M16 4 28 27H4z' fill='%23FF5FA2' stroke='%23111' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='17' r='2.5' fill='%23111'/%3E%3Ccircle cx='12' cy='23' r='2' fill='%23111'/%3E%3Ccircle cx='20' cy='23' r='2' fill='%23111'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -74,6 +77,10 @@ input[type=text]{flex:1 1 150px}
 .btn.dark{background:var(--k);color:var(--y);box-shadow:4px 4px 0 var(--p)}
 .btn small{display:block;font-weight:500;font-size:13px}
 button:focus-visible,input:focus-visible{outline:3px solid var(--b);outline-offset:3px}
+.check{display:inline-flex;align-items:center;gap:12px;margin-top:18px;min-height:44px;font-weight:900;font-size:17px;cursor:pointer}
+.check input{appearance:none;width:30px;height:30px;border:3px solid var(--k);background:var(--w);box-shadow:3px 3px 0 var(--k);margin:0;cursor:pointer;display:grid;place-items:center}
+.check input:checked{background:var(--p)}
+.check input:checked::after{content:"";width:12px;height:7px;border:solid var(--k);border-width:0 0 4px 4px;transform:rotate(-45deg) translate(1px,-2px)}
 .count{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
 .step{display:flex;align-items:center;border:3px solid var(--k);background:var(--w);box-shadow:4px 4px 0 var(--k)}
 .step button{width:48px;height:52px;border:0;background:transparent;font:900 24px Rubik;color:var(--k);cursor:pointer}
@@ -125,7 +132,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--b);outline-offs
     <div class="v-name wait" id="vName">Тисни «тиць»</div>
     <p class="v-desc" id="vDesc"></p>
     <div class="pills" id="vPills"></div>
-    <button class="btn share" id="shareBtn" hidden>Поділитися результатом</button>
+    <div class="row" style="margin-top:16px;gap:12px">
+      <button class="btn" id="diffBtn" hidden>Хочу різні</button>
+      <button class="btn share" id="shareBtn" hidden style="margin-top:0">Поділитися</button>
+    </div>
   </div>
 
   <section class="card">
@@ -152,22 +162,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--b);outline-offs
       <div class="step"><button id="pMinus" aria-label="Менше">−</button><output id="people">4</output><button id="pPlus" aria-label="Більше">+</button></div>
       <div class="need"><b id="need">2 піци</b><span id="needHint"></span></div>
     </div>
-    <p class="hint" style="margin:16px 0 8px">Розмір</p>
-    <div class="row mode">
-      <button class="chip" id="stdBtn">450 г · ~8 шматків</button>
-      <button class="chip" id="xxlBtn">XXL · ~12 шматків</button>
-    </div>
-    <p class="hint" style="margin:16px 0 8px">Наскільки голодні?</p>
-    <div class="row mode" id="hunger">
-      <button class="chip" data-s="2">Перекусити · 2</button>
-      <button class="chip" data-s="3">Нормально · 3</button>
-      <button class="chip" data-s="4">Звір · 4</button>
-    </div>
-    <p class="hint" style="margin:16px 0 8px">Піци однакові чи різні?</p>
-    <div class="row mode">
-      <button class="chip" id="sameBtn">Усі однакові</button>
-      <button class="chip" id="mixBtn">Різні — крутимо на кожну</button>
-    </div>
+    <label class="check"><input type="checkbox" id="hungry"><span>Дуже голодні</span></label>
   </section>
 
   <section class="card">
@@ -186,14 +181,14 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--b);outline-offs
     </form>
     <div class="row names" id="names" style="margin-top:14px"></div>
     <div class="payout" id="payout" aria-live="polite"></div>
-    <button class="btn share" id="shareBtn2" hidden>Поділитися вироком</button>
+    <button class="btn share" id="shareBtn2" hidden>Поділитися</button>
     <div class="grid2">
       <button class="btn" id="splitBtn">Скинутись<small id="splitHint">порівну на всіх</small></button>
       <button class="btn dark" id="oneBtn">Платить один<small>вирішить рандом</small></button>
     </div>
   </section>
 
-  <p class="note">Меню і ціни — Маркетопт. Шматки рахуємо приблизно: 450 г ≈ 8, XXL ≈ 12.</p>
+  <p class="note">Меню і ціни — Маркетопт, піци по 450 г.</p>
 </div>
 
 <script>
@@ -215,20 +210,23 @@ const DEF=[
  ["Мисливська",100,170,"meat","Болонська суміш, моцарела, ковбаски мисливські, грудинка копчена, гриби"],
  ["Дікарні",100,170,"meat","Болонська суміш, моцарела, балик, грудинка копчена"],
  ["Гавайська",100,170,"meat","Болонська суміш, куряче філе, ананас, моцарела"]];
-const SL={std:8,xxl:12},SZ={std:"450 г",xxl:"XXL"};
+
 const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem("pzm_"+k));return v??d}catch(e){return d}};
 const save=(k,v)=>{try{localStorage.setItem("pzm_"+k,JSON.stringify(v))}catch(e){}};
 let pizzas=load("pizzas",DEF.map(([n,p,x,t,d])=>({n,p,x,t,d,on:true})));
-let names=load("names",[]),people=load("people",4),slices=load("slices",3),mix=load("mix",false),size=load("size","std"),sound=load("sound",true);
+let names=load("names",[]),people=load("people",4),hungry=load("hungry",false),sound=load("sound",true);
 let order=[],theta=0,spinning=false,rolling=false,payer=-1;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uah=n=>Math.round(n).toLocaleString("uk-UA")+" ₴";
 const pick=a=>a[Math.floor(Math.random()*a.length)];
-const fits=p=>size==="std"||p.x!=null;
-const price=p=>size==="xxl"?p.x:p.p;
-const active=()=>pizzas.filter(p=>p.on&&fits(p));
-const need=()=>Math.max(1,Math.ceil(people*slices/SL[size]));
+/* правило: звичайно 1 піца (450 г) на двох, дуже голодні — 3 на чотирьох */
+const active=()=>pizzas.filter(p=>p.on);
+const need=()=>Math.max(1,Math.ceil(people*(hungry?.75:.5)));
+const ppl2=n=>n%10===1&&n%100!==11?"людину":n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?"людини":"людей";
+const orderLine=()=>order.map(o=>(o.q>1?o.q+" × ":"")+o.n).join(" + ");
+function updDiff(){const b=$("diffBtn");b.hidden=!(order.length&&order.some(o=>o.q>1)&&active().some(p=>!order.some(o=>o.n===p.n)))}
+const qty=()=>order.reduce((s,o)=>s+o.q,0);
 const piz=n=>n%10===1&&n%100!==11?"піца":n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?"піци":"піц";
 const ppl=n=>n%10===1&&n%100!==11?"людину":n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?"людини":"людей";
 const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
@@ -304,29 +302,29 @@ function setVerdict(l,n,pills,state,desc=""){
  v.classList.remove("pop");if(state==="win"){void v.offsetWidth;v.classList.add("pop")}
  $("vPills").innerHTML=pills.map(([t,c])=>`<span class="pill${c?" b":""}">${esc(t)}</span>`).join("");
 }
-function spin(){
+function spin(diff=false){
  const L=active();if(spinning)return;
  if(!L.length){setVerdict("Колесо порожнє","Обери піци",[],"wait");return}
- if(mix&&order.length>=need())order=[];
- spinning=true;$("spinBtn").disabled=true;payer=-1;$("payout").innerHTML="";renderNames();
+ const ok=L.map((p,j)=>j).filter(j=>!diff||!order.some(o=>o.n===L[j].n));
+ if(!ok.length){toast("Інших піц на колесі немає");return}
+ spinning=true;$("spinBtn").disabled=true;$("diffBtn").disabled=true;payer=-1;$("payout").innerHTML="";$("shareBtn2").hidden=true;renderNames();
  setVerdict("Крутимо…","…",[],"wait");
- const n=L.length,a=Math.PI*2/n,i=Math.floor(Math.random()*n),TAU=Math.PI*2;
+ const n=L.length,a=Math.PI*2/n,i=ok[Math.floor(Math.random()*ok.length)],TAU=Math.PI*2;
  const tgt=-(i+.5)*a+(Math.random()-.5)*a*.7,t0=theta;
  const delta=TAU*7+(((tgt-t0)%TAU)+TAU)%TAU,dur=reduce?60:5200,start=performance.now();let last=-1;
  const step=now=>{const p=Math.min(1,(now-start)/dur),e=1-Math.pow(1-p,4);theta=t0+delta*e;
   const idx=Math.floor((((-theta)%TAU)+TAU)%TAU/a);
   if(idx!==last){if(last>=0){beep(1000,.025,"square",.03);kick=-.3}last=idx}
-  if(p<1)requestAnimationFrame(step);else{spinning=false;$("spinBtn").disabled=false;win(L[i])}};
+  if(p<1)requestAnimationFrame(step);else{spinning=false;$("spinBtn").disabled=false;$("diffBtn").disabled=false;win(L[i],diff)}};
  requestAnimationFrame(step);
 }
-function win(p){
+function win(p,diff){
  const n=need();
- const pr=price(p),sz=SZ[size];
- if(mix){order.push({n:p.n,p:pr,q:1,sz});const left=n-order.length;
-  setVerdict(`Піца ${order.length} з ${n}:`,p.n,left>0?[[`ще ${left} — крутіть далі`,1]]:[["замовлення готове",1],[uah(sum()),0]],"win",p.d||"");
- }else{order=[{n:p.n,p:pr,q:n,sz}];
-  setVerdict(pick(LBL),p.n,[[`${n} × ${sz}`,0],[uah(pr*n),0],[`${n*SL[size]} шматків на ${people}`,1]],"win",p.d||"")}
- lastPizza=p.n;$("shareBtn").hidden=false;track("spin",{pizza:p.n,mode:mix?"mix":"same",people});
+ if(diff){const big=order.find(o=>o.q>1);if(big)big.q--;order.push({n:p.n,p:p.p,q:1});
+  setVerdict("І ще:",p.n,[[orderLine(),0],[uah(sum()),0]],"win",p.d||"");
+ }else{order=[{n:p.n,p:p.p,q:n}];
+  setVerdict(pick(LBL),p.n,[[`${n} × 450 г`,0],[uah(p.p*n),0],[`на ${people} ${ppl2(people)}`,1]],"win",p.d||"")}
+ lastPizza=orderLine();$("shareBtn").hidden=false;updDiff();track("spin",{pizza:p.n,diff:diff?1:0,people});
  renderOrder();fanfare();confetti();
  document.querySelector(".verdict").classList.remove("shake");void document.body.offsetWidth;document.querySelector(".verdict").classList.add("shake");
 }
@@ -345,23 +343,23 @@ function cfLoop(){fx.clearRect(0,0,cf.width,cf.height);
 
 /* UI */
 function renderPizzas(){
- $("pizzas").innerHTML=pizzas.map((p,i)=>`<button class="chip${fits(p)?"":" nofit"}" data-i="${i}" aria-pressed="${p.on}" title="${esc(p.d||"")}"><span class="sq" style="background:${SQ[p.t]||"#ccc"}"></span>${esc(p.n)} <span class="pr">${fits(p)?uah(price(p)):"немає XXL"}</span></button>`).join("");
+ $("pizzas").innerHTML=pizzas.map((p,i)=>`<button class="chip" data-i="${i}" aria-pressed="${p.on}" title="${esc(p.d||"")}"><span class="sq" style="background:${SQ[p.t]||"#ccc"}"></span>${esc(p.n)} <span class="pr">${uah(p.p)}</span></button>`).join("");
  buildArt();save("pizzas",pizzas);
 }
 function sum(){return order.reduce((s,o)=>s+o.p*o.q,0)}
 function renderNeed(){
- const n=need();$("people").textContent=people;
+ const n=need();$("people").textContent=people;$("hungry").checked=hungry;
  $("need").textContent=`${n} ${piz(n)}`;
- $("needHint").textContent=`${people} × ${slices} = ${people*slices} шматків, у піці ${SZ[size]} ≈ ${SL[size]}`;
- $("stdBtn").setAttribute("aria-pressed",size==="std");$("xxlBtn").setAttribute("aria-pressed",size==="xxl");
- document.querySelectorAll("#hunger .chip").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.s===slices));
- $("sameBtn").setAttribute("aria-pressed",!mix);$("mixBtn").setAttribute("aria-pressed",mix);
- if(!mix&&order.length===1)order[0].q=n;
- if(mix&&order.length>n)order=order.slice(0,n);
- renderOrder();save("people",people);save("slices",slices);save("mix",mix);save("size",size);
+ $("needHint").textContent=hungry?"дуже голодні: 3 піци на чотирьох":"по 450 г, одна на двох";
+ if(order.length&&qty()!==n){let d=n-qty();
+  if(d>0)order[0].q+=d;
+  while(d<0){const o=order.find(o=>o.q>1)||order[order.length-1];o.q--;if(!o.q)order.splice(order.indexOf(o),1);d++}
+  $("vPills").innerHTML=[[orderLine(),0],[uah(sum()),0],[`на ${people} ${ppl2(people)}`,1]].map(([t,c])=>`<span class="pill${c?" b":""}">${esc(t)}</span>`).join("");
+  lastPizza=orderLine()}
+ updDiff();renderOrder();save("people",people);save("hungry",hungry);
 }
 function renderOrder(){
- $("order").innerHTML=order.length?order.map(o=>`<li><span>${o.q} × ${esc(o.n)}${o.sz?` · ${esc(o.sz)}`:""}</span><span>${uah(o.p*o.q)}</span></li>`).join("")
+ $("order").innerHTML=order.length?order.map(o=>`<li><span>${o.q} × ${esc(o.n)}</span><span>${uah(o.p*o.q)}</span></li>`).join("")
   :`<li><span style="font-weight:500;color:#555">Поки порожньо — тицяй колесо</span><span></span></li>`;
  $("total").textContent=order.length?uah(sum()):"—";
  const k=names.length||people;$("splitHint").textContent=order.length?`по ${uah(Math.ceil(sum()/k))} з кожного`:"порівну на всіх";
@@ -372,7 +370,7 @@ function renderNames(){
  save("names",names);renderOrder();
 }
 
-$("spinBtn").onclick=()=>{beep(1,.001);spin()};
+$("spinBtn").onclick=()=>{beep(1,.001);spin(false)};
 $("mute").onclick=()=>{sound=!sound;save("sound",sound);renderMute()};
 $("pizzas").onclick=e=>{const b=e.target.closest(".chip");if(!b||spinning)return;pizzas[b.dataset.i].on=!pizzas[b.dataset.i].on;renderPizzas()};
 document.querySelector(".quick").onclick=e=>{const q=e.target.closest(".chip")?.dataset.q;if(!q||spinning)return;
@@ -380,15 +378,12 @@ document.querySelector(".quick").onclick=e=>{const q=e.target.closest(".chip")?.
  pizzas.forEach(p=>{if(q==="all")p.on=true;else if(q==="none")p.on=false;else if(q==="veg")p.on=p.t==="veg";
   else if(q==="nomush"){if(has(p,"гриб"))p.on=false}else if(q==="nopickle"){if(has(p,"огір"))p.on=false}});renderPizzas()};
 $("addPizza").onsubmit=e=>{e.preventDefault();const n=$("newName").value.trim();if(!n||spinning)return;
- const pv=Math.max(0,+$("newPrice").value||0);pizzas.push({n:n.slice(0,30),p:pv,x:pv,t:"veg",d:"",on:true});$("newName").value="";$("newPrice").value="";renderPizzas()};
+ const pv=Math.max(0,+$("newPrice").value||0);pizzas.push({n:n.slice(0,30),p:pv,t:"veg",d:"",on:true});$("newName").value="";$("newPrice").value="";renderPizzas()};
 $("pMinus").onclick=()=>{people=Math.max(1,people-1);renderNeed()};
 $("pPlus").onclick=()=>{people=Math.min(50,people+1);renderNeed()};
-$("hunger").onclick=e=>{const b=e.target.closest(".chip");if(b){slices=+b.dataset.s;renderNeed()}};
-$("stdBtn").onclick=()=>{if(spinning)return;size="std";order=[];renderNeed();renderPizzas()};
-$("xxlBtn").onclick=()=>{if(spinning)return;size="xxl";order=[];renderNeed();renderPizzas()};
-$("sameBtn").onclick=()=>{mix=false;order=[];renderNeed()};
-$("mixBtn").onclick=()=>{mix=true;order=[];renderNeed()};
-$("resetOrder").onclick=()=>{order=[];payer=-1;renderOrder();renderNames();$("payout").innerHTML="";setVerdict("Колесо чекає","Тисни «тиць»",[],"wait")};
+$("hungry").onchange=e=>{hungry=e.target.checked;renderNeed()};
+$("diffBtn").onclick=()=>{beep(1,.001);spin(true)};
+$("resetOrder").onclick=()=>{order=[];payer=-1;$("diffBtn").hidden=true;$("shareBtn").hidden=true;$("shareBtn2").hidden=true;renderOrder();renderNames();$("payout").innerHTML="";setVerdict("Колесо чекає","Тисни «тиць»",[],"wait")};
 $("addName").onsubmit=e=>{e.preventDefault();const n=$("nameIn").value.trim();if(!n||rolling)return;names.push(n.slice(0,24));$("nameIn").value="";payer=-1;renderNames()};
 $("names").onclick=e=>{const b=e.target.closest(".chip");if(!b||rolling)return;names.splice(+b.dataset.i,1);payer=-1;renderNames()};
 $("splitBtn").onclick=()=>{
